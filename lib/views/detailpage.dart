@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class DeatailPage extends StatefulWidget {
-  const DeatailPage({super.key});
+import '../model/helper/Json_Quote_helper.dart';
+import '../model/jsonmodel.dart';
+
+class DetailPage extends StatefulWidget {
+  const DetailPage({super.key});
 
   @override
-  State<DeatailPage> createState() => _DeatailPageState();
+  State<DetailPage> createState() => _DetailPageState();
 }
 
-class _DeatailPageState extends State<DeatailPage> {
+class _DetailPageState extends State<DetailPage> {
+  late Future<List<Jsonmodel>> futureQuotes;
+  late String selectedCategoryName;
+
+  @override
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic> data =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-
-    List quotes = data['quotes'];
-
+    final category =
+        ModalRoute.of(context)?.settings.arguments as Jsonquotecatagory?;
+    selectedCategoryName = category?.categoryName ?? '';
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "${data['name']} Quotes",
+          "$selectedCategoryName Quotes",
           style: GoogleFonts.getFont(
             "Mulish",
             textStyle: const TextStyle(fontSize: 20),
@@ -27,56 +32,74 @@ class _DeatailPageState extends State<DeatailPage> {
         ),
         centerTitle: true,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: quotes.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.of(context)
-                    .pushNamed("quote_detail", arguments: quotes[index]);
-              },
-              child: Card(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: index % 2 == 0
-                        ? Colors.yellow.shade100
-                        : Colors.pink.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        quotes[index]['quote'],
-                        style: GoogleFonts.getFont(
-                          "Mulish",
-                          textStyle: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          "- ${quotes[index]['author']}",
-                          style: GoogleFonts.getFont(
-                            "Mulish",
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.blueAccent,
+      body: FutureBuilder<List<Jsonmodel>>(
+        future: JsonQuoteHelper.jsonQuoteHelper
+            .fetchQuotesByCategory(selectedCategoryName),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text("ERROR: ${snapshot.error}"),
+            );
+          } else if (snapshot.hasData) {
+            List<Jsonmodel>? quotes = snapshot.data;
+            return (quotes == null || quotes.isEmpty)
+                ? const Center(child: Text("No quotes available"))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: quotes.length,
+                    itemBuilder: (context, index) {
+                      final quote = quotes[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .pushNamed("quote_detail", arguments: quote);
+                          },
+                          child: Card(
+                            elevation: 3,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: index % 2 == 0
+                                    ? Colors.teal.shade50
+                                    : Colors.teal.shade100.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    quote.quote,
+                                    style: GoogleFonts.getFont(
+                                      "Mulish",
+                                      textStyle: const TextStyle(fontSize: 18),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      "- ${quote.author}",
+                                      style: GoogleFonts.getFont(
+                                        "Mulish",
+                                        textStyle: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.blueAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
+                      );
+                    },
+                  );
+          }
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );

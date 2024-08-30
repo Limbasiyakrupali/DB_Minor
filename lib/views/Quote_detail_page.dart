@@ -7,7 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_extend/share_extend.dart';
+
+import '../model/jsonmodel.dart';
+import '../provider/favourite_provider.dart';
 
 class Quotedetailpage extends StatefulWidget {
   const Quotedetailpage({super.key});
@@ -18,11 +22,8 @@ class Quotedetailpage extends StatefulWidget {
 
 class _QuotedetailpageState extends State<Quotedetailpage> {
   Color selFontColor = Colors.black;
-  String? selImage;
-
   GlobalKey repaintKey = GlobalKey();
 
-  get images => null;
   Future<void> shareImage() async {
     RenderRepaintBoundary renderRepaintBoundary =
         repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
@@ -33,193 +34,158 @@ class _QuotedetailpageState extends State<Quotedetailpage> {
 
     Uint8List fetchImage = byteData!.buffer.asUint8List();
 
-    Directory directory = await getApplicationCacheDirectory();
+    Directory directory = await getApplicationDocumentsDirectory();
 
-    String path = directory.path;
+    File file = File('${directory.path}/quote_image.png');
+    await file.writeAsBytes(fetchImage);
 
-    File file = File('$path.png');
-
-    file.writeAsBytes(fetchImage);
-
-    ShareExtend.share(file.path, "Image");
+    ShareExtend.share(file.path, "image");
   }
 
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic> data =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final Jsonmodel quote =
+        ModalRoute.of(context)!.settings.arguments as Jsonmodel;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Detail Page",
+          "Quote Detail",
           style: GoogleFonts.getFont("Mulish",
-              textStyle: TextStyle(
-                fontSize: 21,
-              )),
+              textStyle: const TextStyle(fontSize: 21)),
         ),
         centerTitle: true,
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 271,
-                    width: 300,
-                    margin: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black38,
-                            blurRadius: 5.0,
-                            blurStyle: BlurStyle.solid,
-                          ),
-                        ],
-                        image: const DecorationImage(
-                          fit: BoxFit.cover,
-                          image: NetworkImage(
-                              "https://static.vecteezy.com/system/resources/thumbnails/037/982/950/small_2x/ai-generated-world-peace-day-dove-brings-hope-and-harmony-photo.jpeg"),
-                        ),
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15)),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 15, right: 15),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "${data['quote']}",
-                            style: GoogleFonts.getFont("Mulish",
-                                textStyle: TextStyle(
-                                  fontSize: 18,
-                                  color: selFontColor,
-                                )),
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              "- ${data['author']}",
-                              style: GoogleFonts.getFont("Mulish",
-                                  textStyle: TextStyle(
-                                      fontSize: 16, color: selFontColor)),
-                            ),
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                onPressed: () async {
-                                  await FlutterClipboard.copy(data['quote'])
-                                      .then((value) {
-                                    // ScaffoldMessenger.of(context).showSnackBar(
-                                    //   SnackBar(
-                                    //     backgroundColor: Colors.grey,
-                                    //     behavior: SnackBarBehavior.floating,
-                                    //     content: Text(
-                                    //       "Copied Success!!!",
-                                    //       style: TextStyle(color: Colors.black),
-                                    //     ),
-                                    //   ),
-                                    // );
-                                  });
-                                },
-                                icon: const Icon(
-                                  Icons.copy,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    Icons.share,
-                                    color: Colors.white,
-                                  )),
-                              IconButton(
-                                  onPressed: () async {
-                                    await shareImage();
-                                  },
-                                  icon: Icon(
-                                    Icons.favorite_border_outlined,
-                                    color: Colors.white,
-                                    size: 25,
-                                  )),
-                            ],
-                          ),
-                          SizedBox(
-                            height: 30,
-                          ),
-                        ],
-                      ),
-                    ),
+      body: RepaintBoundary(
+        key: repaintKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 271,
+              width: 300,
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  fit: BoxFit.cover,
+                  image: NetworkImage(
+                      "https://static.vecteezy.com/system/resources/thumbnails/037/982/950/small_2x/ai-generated-world-peace-day-dove-brings-hope-and-harmony-photo.jpeg"),
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black38,
+                    blurRadius: 5.0,
+                    blurStyle: BlurStyle.solid,
                   ),
                 ],
-              )
-            ],
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 15),
-                child: Text(
-                  "Change Font Color",
-                  style: GoogleFonts.getFont("Mulish",
-                      textStyle: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w400)),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(15.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      quote.quote,
+                      style: GoogleFonts.getFont("Mulish",
+                          textStyle:
+                              TextStyle(fontSize: 18, color: selFontColor)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        "- ${quote.author}",
+                        style: GoogleFonts.getFont("Mulish",
+                            textStyle:
+                                TextStyle(fontSize: 16, color: selFontColor)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          onPressed: () async {
+                            await FlutterClipboard.copy(quote.quote);
+                          },
+                          icon: const Icon(Icons.copy, color: Colors.black),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            await shareImage();
+                          },
+                          icon: const Icon(Icons.share, color: Colors.black),
+                        ),
+                        Consumer<FavouriteProvider>(
+                          builder: (context, favProvider, child) {
+                            bool isLiked = favProvider.isLiked(quote);
+                            return IconButton(
+                              onPressed: () {
+                                if (isLiked) {
+                                  favProvider.disLike(model: quote);
+                                } else {
+                                  favProvider.like(model: quote);
+                                }
+                              },
+                              icon: Icon(
+                                isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: isLiked ? Colors.red : Colors.black,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 30),
+                  ],
                 ),
               ),
-            ],
-          ),
-          SizedBox(
-            height: 15,
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 15, top: 5, right: 15),
-              child: Row(
-                children: Colors.accents
-                    .map((e) => GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selFontColor = e;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 10, top: 10),
-                            height: 60,
-                            width: 60,
-                            decoration: BoxDecoration(
-                              color: e,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.black87,
-                                width: 3,
-                              ),
-                            ),
-                          ),
-                        ))
-                    .toList(),
+            ),
+            SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.only(left: 15),
+              child: Text(
+                "Change Font Color",
+                style: GoogleFonts.getFont("Mulish",
+                    textStyle:
+                        const TextStyle(color: Colors.black, fontSize: 20)),
               ),
             ),
-          ),
-        ],
+            SizedBox(height: 15),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 15, top: 5, right: 15),
+                child: Row(
+                  children: Colors.accents.map((color) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selFontColor = color;
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 10, top: 10),
+                        height: 60,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.black87, width: 3),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

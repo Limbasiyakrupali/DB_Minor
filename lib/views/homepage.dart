@@ -1,8 +1,10 @@
-import 'dart:convert';
-
+import 'package:db_minor/model/helper/Json_Quote_helper.dart';
+import 'package:db_minor/model/helper/database.dart';
+import 'package:db_minor/model/jsonmodel.dart';
+import 'package:db_minor/provider/theme_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -12,15 +14,8 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  late Future<String> jsondata;
-
-  loaddata() {
-    jsondata = rootBundle.loadString("assets/alldata.json");
-  }
-
   @override
   void initState() {
-    loaddata();
     super.initState();
   }
 
@@ -30,10 +25,38 @@ class _HomepageState extends State<Homepage> {
       appBar: AppBar(
         title: const Text(
           "Quote App",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        backgroundColor: Colors.teal.shade100.withOpacity(0.8),
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.favorite))],
+        actions: [
+          IconButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed("fav");
+              },
+              icon: Icon(
+                Icons.favorite,
+                size: 29,
+                color: Colors.black,
+              )),
+          IconButton(
+            onPressed: () {
+              Provider.of<ThemeProvider>(context, listen: false).Changetheme();
+            },
+            icon: Icon(
+              Icons.dark_mode,
+              size: 30,
+              color: Provider.of<ThemeProvider>(
+                context,
+              ).istapped
+                  ? Colors.white70
+                  : Colors.black,
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -45,6 +68,9 @@ class _HomepageState extends State<Homepage> {
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: TextField(
+                        onChanged: (val) {
+                          DbHelper.dbHelper.searchCategory(data: val);
+                        },
                         decoration: InputDecoration(
                             hintText: "Search",
                             suffixIcon: IconButton(
@@ -58,20 +84,18 @@ class _HomepageState extends State<Homepage> {
                 ],
               )),
           Expanded(
-              flex: 15,
-              child: FutureBuilder(
-                future: jsondata,
+              flex: 14,
+              child: FutureBuilder<List<Jsonquotecatagory>>(
+                future: JsonQuoteHelper.jsonQuoteHelper.fetchCategories(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Center(
                       child: Text("ERROR: ${snapshot.error}"),
                     );
                   } else if (snapshot.hasData) {
-                    String? data = snapshot.data;
+                    List<Jsonquotecatagory>? data = snapshot.data;
 
-                    List allposts = (data == null) ? [] : jsonDecode(data);
-
-                    return (data == null)
+                    return (data == null || data.isEmpty)
                         ? const Center(
                             child: Text("No data found"),
                           )
@@ -79,13 +103,16 @@ class _HomepageState extends State<Homepage> {
                             itemBuilder: (context, index) {
                               return GestureDetector(
                                 onTap: () {
-                                  Navigator.of(context).pushNamed("detail",
-                                      arguments: allposts[index]);
+                                  Navigator.of(context).pushNamed(
+                                    "detail",
+                                    arguments: data[index],
+                                  );
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.only(
                                       left: 10, right: 10, bottom: 10),
                                   child: Card(
+                                    elevation: 3,
                                     child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -95,22 +122,23 @@ class _HomepageState extends State<Homepage> {
                                           height: 110,
                                           decoration: BoxDecoration(
                                             color: index % 2 == 0
-                                                ? Colors.yellow.shade100
-                                                : Colors.pink.shade100,
+                                                ? Colors.teal.shade50
+                                                : Colors.teal.shade100
+                                                    .withOpacity(0.8),
                                             borderRadius:
-                                                BorderRadius.circular(10),
+                                                BorderRadius.circular(5),
                                           ),
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
                                               Text(
-                                                "${allposts[index]['name']}",
+                                                "${data[index].categoryName}",
                                                 style: GoogleFonts.getFont(
-                                                    "Mulish",
-                                                    textStyle: const TextStyle(
-                                                      fontSize: 20,
-                                                    )),
+                                                  "Mulish",
+                                                  textStyle: const TextStyle(
+                                                      fontSize: 20),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -121,8 +149,7 @@ class _HomepageState extends State<Homepage> {
                                 ),
                               );
                             },
-                            itemCount:
-                                allposts.length, // Use the length of allposts
+                            itemCount: data.length,
                           );
                   }
                   return const Center(
